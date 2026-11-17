@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Upwork Job Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Layout: summary strip, then three lanes (ready / blocked / skipped), cards scanned top to bottom */
+  --bg: #f4f6f5;
+  --surface: #ffffff;
+  --ink: #17201c;
+  --muted: #5d6b64;
+  --line: #dde3e0;
+  --accent: #0f6b5c;
+  --good: #1d7a3e;
+  --good-bg: #e3f3e8;
+  --warn: #9a5b00;
+  --warn-bg: #fbefd9;
+  --bad: #a3322b;
+  --bad-bg: #f8e3e1;
+  --font-display: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111614; --surface: #19201d; --ink: #e6ece9; --muted: #95a39c; --line: #2b3531;
+    --accent: #4cc2ab; --good: #6fd08f; --good-bg: #1c3325; --warn: #f0b45a; --warn-bg: #3a2c14;
+    --bad: #f08a80; --bad-bg: #3d1f1c; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111614; --surface: #19201d; --ink: #e6ece9; --muted: #95a39c; --line: #2b3531;
+  --accent: #4cc2ab; --good: #6fd08f; --good-bg: #1c3325; --warn: #f0b45a; --warn-bg: #3a2c14;
+  --bad: #f08a80; --bad-bg: #3d1f1c; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+main { max-width: 1120px; margin: 0 auto; padding: 28px 20px 56px; display: grid; gap: 28px; }
+header { display: grid; gap: 6px; }
+h1 { font-family: var(--font-display); font-size: 26px; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+h2 { font-size: 17px; margin: 0; display: flex; align-items: center; gap: 10px; text-wrap: balance; }
+.sub { color: var(--muted); margin: 0; max-width: 72ch; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.topbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
+.strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 2px; }
+.tile b { font-size: 24px; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.tile span { color: var(--muted); font-size: 13px; }
+.lane { display: grid; gap: 12px; }
+.count { font-family: var(--font-mono); font-size: 13px; padding: 1px 8px; border-radius: 99px; background: var(--line); color: var(--ink); }
+.card { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--line); border-radius: 10px; padding: 16px 18px; display: grid; gap: 12px; }
+.card.ready { border-left-color: var(--good); }
+.card.blocked { border-left-color: var(--warn); }
+.card-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px; align-items: baseline; }
+.card-head a { color: var(--ink); font-weight: 600; font-size: 16px; text-decoration: none; border-bottom: 1px solid var(--line); }
+.card-head a:hover, .card-head a:focus-visible { color: var(--accent); border-bottom-color: var(--accent); outline: none; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 12px; font-weight: 500; padding: 2px 8px; border-radius: 6px; white-space: nowrap; }
+.chip.good { background: var(--good-bg); color: var(--good); }
+.chip.warn { background: var(--warn-bg); color: var(--warn); }
+.chip.bad { background: var(--bad-bg); color: var(--bad); }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px 16px; margin: 0; }
+.facts div { display: grid; gap: 0; }
+.facts dt { font-size: 12px; color: var(--muted); }
+.facts dd { margin: 0; font-family: var(--font-mono); font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.fit { margin: 0; color: var(--ink); max-width: 90ch; }
+.fit strong { color: var(--accent); font-weight: 600; }
+.note { margin: 0; font-size: 13.5px; color: var(--muted); }
+table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; font-size: 14px; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; color: var(--muted); font-weight: 500; }
+tr:last-child td { border-bottom: 0; }
+td.rule { font-family: var(--font-mono); white-space: nowrap; color: var(--bad); }
+.table-wrap { overflow-x: auto; }
+.rules { display: flex; flex-wrap: wrap; gap: 6px; }
+.rules span { font-size: 12px; border: 1px solid var(--line); border-radius: 6px; padding: 2px 8px; color: var(--muted); background: var(--surface); }
+.rules b { font-family: var(--font-mono); color: var(--ink); font-weight: 500; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn { font: inherit; font-size: 14px; font-weight: 600; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--accent); cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+.btn.primary { background: var(--accent); color: var(--surface); }
+.btn.ghost { background: transparent; color: var(--accent); }
+.btn:hover { filter: brightness(1.08); }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.copied { font-size: 13px; color: var(--muted); }
+.copied code { font-family: var(--font-mono); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; color: var(--ink); user-select: all; }
+td a { color: var(--ink); }
+td a:hover, td a:focus-visible { color: var(--accent); }
+@media (prefers-reduced-motion: no-preference) { .btn { transition: filter .15s; } }
+footer { color: var(--muted); font-size: 13px; }
+@media (max-width: 420px) { main { padding: 20px 16px 40px; } h1 { font-size: 22px; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="topbar">
+      <h1>Upwork Job Board</h1>
+      <div class="actions">
+        <button type="button" class="btn primary" id="refresh-btn">Refresh now</button>
+        <span class="copied" id="refresh-status" role="status" aria-live="polite"></span>
+      </div>
+    </div>
+    <p class="sub">Last refreshed <time class="mono" id="refreshed-at" datetime="2026-01-01T00:00:00Z">never</time> · <span id="refreshed-ago"></span> · Updated by the hourly refresh.</p>
+    <p class="sub">Best Match jobs plus your keyword searches, filtered by the rules in <code>profile.md</code>.</p>
+  </header>
+
+  <section class="strip" aria-label="Summary">
+    <div class="tile"><b>0</b><span>Best Match/recent + keyword jobs scanned</span></div>
+    <div class="tile"><b id="n-ready">0</b><span>Ready to apply</span></div>
+    <div class="tile"><b id="n-blocked">0</b><span>Good fit, blocked</span></div>
+    <div class="tile"><b id="n-skip">0</b><span>Skipped by a rule</span></div>
+  </section>
+
+  <section class="lane" aria-labelledby="h-ready">
+    <h2 id="h-ready">Ready to apply <span class="count" id="c-ready"></span></h2>
+    <div id="ready" class="lane"></div>
+  </section>
+
+  <section class="lane" aria-labelledby="h-blocked">
+    <h2 id="h-blocked">Good fit, but blocked by boost or Best Match <span class="count" id="c-blocked"></span></h2>
+    <p class="note">These pass every client rule. They fail only on boost cost or because they aren't in your Best Matches. You can still apply without a boost, but the proposal will probably sink below the boosted ones.</p>
+    <div id="blocked" class="lane"></div>
+  </section>
+
+  <section class="lane" aria-labelledby="h-skip">
+    <h2 id="h-skip">Skipped <span class="count" id="c-skip"></span></h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th scope="col">Job</th><th scope="col">Failed</th><th scope="col">Why</th></tr></thead>
+        <tbody id="skipped"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="lane" aria-labelledby="h-rules">
+    <h2 id="h-rules">Rules applied</h2>
+    <div class="rules">
+      <span><b>R1</b> Open to your country</span><span><b>R2</b> At or above your rate floor</span><span><b>R3</b> Top-4 boost within your Connects cap</span>
+      <span><b>R4</b> No hire yet</span><span><b>R5</b> Real experience match</span><span><b>R6</b> Not applied</span>
+      <span><b>R7</b> In Best Matches</span><span><b>R8</b> Posted yesterday or today</span><span><b>R9</b> Client viewed recently</span>
+      <span><b>R10</b> Payment verified</span><span><b>R11</b> Client rating above your minimum</span><span><b>R12</b> Client spend above your minimum</span><span><b>R13</b> Client not in an excluded country</span>
+    </div>
+  </section>
+
+  <footer>“Refresh now” and “Apply with Claude” copy a command. Paste it into Claude Code and Claude will re-check the job, pick the best-matching resume, draft the proposal, and show it to you. Nothing is submitted until you say yes.<br>To refresh, ask Claude: “/upwork-jobs refresh my dashboard”. The board is a snapshot: “last viewed” times and boost bids change hourly.</footer>
+</main>
+
+<script>
+const ready = [];
+
+const blocked = [];
+
+const skipped = [];
+
+function card(job, kind) {
+  const el = document.createElement("article");
+  el.className = "card " + kind;
+  const chips = job.chips.map(([c, t]) => `<span class="chip ${c}">${t}</span>`).join("");
+  const facts = Object.entries(job.facts).map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("");
+  el.innerHTML = `
+    <div class="card-head"><a href="${job.url}" target="_blank" rel="noopener">${job.title}</a><div class="chips">${chips}</div></div>
+    <dl class="facts">${facts}</dl>
+    <p class="fit">${job.fit}</p>
+    <div class="actions">
+      <a class="btn ghost" href="${job.url}" target="_blank" rel="noopener">View on Upwork ↗</a>
+      <button type="button" class="btn primary" data-url="${job.url}" data-title="${job.title.replace(/"/g,'&quot;')}">Apply with Claude</button>
+      <span class="copied" role="status" aria-live="polite"></span>
+    </div>`;
+  el.querySelector("button.primary").addEventListener("click", onApply);
+  return el;
+}
+async function onApply(e) {
+  const btn = e.currentTarget;
+  const cmd = `/upwork-jobs apply ${btn.dataset.url}`;
+  const status = btn.parentElement.querySelector(".copied");
+  let ok = false;
+  try { await navigator.clipboard.writeText(cmd); ok = true; } catch (err) { ok = false; }
+  status.innerHTML = (ok ? "Copied. Paste it into Claude: " : "Copy this into Claude: ") + `<code>${cmd}</code>`;
+}
+document.getElementById("refresh-btn").addEventListener("click", async (e) => {
+  const cmd = "/upwork-jobs refresh my dashboard";
+  const st = document.getElementById("refresh-status");
+  let ok = false;
+  try { await navigator.clipboard.writeText(cmd); ok = true; } catch (err) { ok = false; }
+  st.innerHTML = (ok ? "Copied. Paste it into Claude: " : "Copy this into Claude: ") + `<code>${cmd}</code>`;
+});
+(function () {
+  const t = new Date(document.getElementById("refreshed-at").getAttribute("datetime"));
+  const el = document.getElementById("refreshed-ago");
+  function tick() {
+    const m = Math.round((Date.now() - t.getTime()) / 60000);
+    el.textContent = m < 1 ? "just now" : m < 60 ? `${m} min ago` : `${Math.floor(m / 60)} h ${m % 60} min ago`;
+    el.style.color = m > 90 ? "var(--warn)" : "";
+  }
+  tick(); setInterval(tick, 60000);
+})();
+const r = document.getElementById("ready"), b = document.getElementById("blocked"), s = document.getElementById("skipped");
+ready.forEach(j => r.appendChild(card(j, "ready")));
+if (!ready.length) r.innerHTML = '<p class="note">No job passes every rule right now. The closest options are the jobs below, which you can still apply to without a boost.</p>';
+blocked.forEach(j => b.appendChild(card(j, "blocked")));
+skipped.forEach(([t, id, rule, why]) => {
+  const tr = document.createElement("tr");
+  tr.innerHTML = `<td><a href="https://www.upwork.com/jobs/~02${id}" target="_blank" rel="noopener">${t} ↗</a></td><td class="rule">${rule}</td><td>${why}</td>`;
+  s.appendChild(tr);
+});
+document.getElementById("c-ready").textContent = ready.length;
+document.getElementById("c-blocked").textContent = blocked.length;
+document.getElementById("c-skip").textContent = skipped.length;
+document.getElementById("n-ready").textContent = ready.length;
+document.getElementById("n-blocked").textContent = blocked.length;
+document.getElementById("n-skip").textContent = skipped.length;
+</script>
+</body>
+</html>
