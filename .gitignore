@@ -1,5 +1,6 @@
 *.env
 !*.env.example
 .DS_Store
-config.bat
 node_modules
+.env
+.env.local
